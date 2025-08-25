@@ -1,0 +1,69 @@
+# Multi-stage build for Railway deployment
+FROM node:18-alpine AS base
+
+# Install dependencies only when needed
+FROM base AS deps
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY api/package*.json ./api/
+COPY client/package*.json ./client/
+COPY packages/data-provider/package*.json ./packages/data-provider/
+COPY packages/data-schemas/package*.json ./packages/data-schemas/
+COPY packages/api/package*.json ./packages/api/
+COPY packages/client/package*.json ./packages/client/
+
+# Install dependencies
+RUN npm ci --only=production
+
+# Build stage
+FROM base AS builder
+WORKDIR /app
+
+# Copy source code
+COPY . .
+COPY --from=deps /app/node_modules ./node_modules
+
+# Build packages
+RUN npm run build:data-schemas
+RUN npm run build:data-provider
+RUN npm run build:api
+RUN npm run build:client-package
+
+# Build frontend
+WORKDIR /app/client
+RUN npm run build
+
+# Production stage
+FROM base AS runner
+WORKDIR /app
+
+# Create app user
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 appuser
+
+# Copy built application
+COPY --from=builder --chown=appuser:nodejs /app/api ./api
+COPY --from=builder --chown=appuser:nodejs /app/client/dist ./client/dist
+COPY --from=builder --chown=appuser:nodejs /app/config ./config
+COPY --from=builder --chown=appuser:nodejs /app/packages ./packages
+COPY --from=builder --chown=appuser:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=appuser:nodejs /app/package*.json ./
+
+# Copy custom config
+COPY --chown=appuser:nodejs custom-config.yaml ./librechat.yaml
+
+# Create necessary directories
+RUN mkdir -p uploads logs && chown -R appuser:nodejs uploads logs
+
+USER appuser
+
+EXPOSE 3080
+
+ENV NODE_ENV=production
+ENV HOST=0.0.0.0
+ENV PORT=3080
+ENV APP_TITLE=Allison
+
+CMD ["npm", "run", "backend"]

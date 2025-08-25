@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  api:
+    volumes:
+      - ./custom-config.yaml:/app/librechat.yaml
+      - ./config:/app/api/data
+    environment:
+      - CONFIG_FILE=/app/librechat.yaml
+      - RAG_API_URL=
+      - DISABLE_RAG=true
+    ports:
+      - "3080:3080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - mongodb
+      - meilisearch
+    networks:
+      - default

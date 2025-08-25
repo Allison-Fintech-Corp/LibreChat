@@ -1,0 +1,26 @@
+version: 1.2.1
+
+interface:
+  endpointsMenu: true
+  modelSelect: true
+  parameters: true
+  sidePanel: true
+  presets: true
+  agents: false
+
+endpoints:
+  custom:
+    - name: 'openrouter'
+      apiKey: '${OPENROUTER_API_KEY}'
+      baseURL: 'https://openrouter.ai/api/v1'
+      models:
+        default: ['meta-llama/llama-3.3-70b-instruct']
+        fetch: true
+      titleConvo: true
+      titleModel: 'meta-llama/llama-3.3-70b-instruct'
+      modelDisplayLabel: 'OpenRouter'
+      skipTracing: true
+      dropParams: ['stop']
+      headers:
+        'HTTP-Referer': 'http://localhost:3080'
+        'X-Title': 'Allison Local'

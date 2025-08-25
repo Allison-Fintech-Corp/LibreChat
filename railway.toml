@@ -1,0 +1,39 @@
+[build]
+builder = "dockerfile"
+
+[deploy]
+healthcheckPath = "/api/config"
+healthcheckTimeout = 300
+restartPolicyType = "on_failure"
+
+[[services]]
+name = "allison"
+source = "."
+
+[services.variables]
+APP_TITLE = "Allison"
+NODE_ENV = "production"
+HOST = "0.0.0.0"
+PORT = "3080"
+
+[[services]]
+name = "mongodb"
+source = "mongo:7"
+
+[services.variables]
+MONGO_INITDB_DATABASE = "allison"
+
+[[services]]
+name = "meilisearch"
+source = "getmeili/meilisearch:v1.12.3"
+
+[services.variables]
+MEILI_NO_ANALYTICS = "true"
+
+[[services]]
+name = "postgres"
+source = "ankane/pgvector:latest"
+
+[services.variables]
+POSTGRES_DB = "allison"
+POSTGRES_USER = "allison"

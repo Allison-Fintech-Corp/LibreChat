@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  allison:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: Allison
+    ports:
+      - "3080:3080"
+    depends_on:
+      - mongodb
+      - meilisearch
+      - vectordb
+    environment:
+      - HOST=0.0.0.0
+      - PORT=3080
+      - MONGO_URI=mongodb://mongodb:27017/Allison
+      - MEILI_HOST=http://meilisearch:7700
+      - APP_TITLE=Allison
+      - NODE_ENV=production
+    volumes:
+      - ./.env:/app/.env
+      - ./custom-config.yaml:/app/librechat.yaml
+      - ./uploads:/app/uploads
+      - ./logs:/app/api/logs
+    restart: unless-stopped
+
+  mongodb:
+    image: mongo:7
+    container_name: allison-mongodb
+    restart: unless-stopped
+    volumes:
+      - mongodb_data:/data/db
+    command: mongod --noauth
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.12.3
+    container_name: allison-meilisearch
+    restart: unless-stopped
+    environment:
+      - MEILI_HOST=http://meilisearch:7700
+      - MEILI_NO_ANALYTICS=true
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY:-demo_key_change_in_production}
+    volumes:
+      - meilisearch_data:/meili_data
+
+  vectordb:
+    image: ankane/pgvector:latest
+    container_name: allison-vectordb
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: allison
+      POSTGRES_USER: allison
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-demo_password_change_in_production}
+    volumes:
+      - vectordb_data:/var/lib/postgresql/data
+
+volumes:
+  mongodb_data:
+  meilisearch_data:
+  vectordb_data:
